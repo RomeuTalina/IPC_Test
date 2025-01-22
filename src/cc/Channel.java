@@ -107,7 +107,7 @@ public class Channel {
         int pos = loadFromBuffer(getIdx);
         int newIdx = pos;
         buffer.position(pos);
-        MsgLength = readMsgLength("", pos);
+        msgLength = readMsgLength("", pos);
         char[] msg = new char[msgLength];
         for(int i = 0; i < msgLength; i++){
             msg[i] = buffer.getChar();
@@ -129,9 +129,13 @@ public class Channel {
 
     protected void initEmpty(){
         buffer.position(0);
-        for(int i = 0; i < BUFFER_SIZE; i+=2){
+        for(int i = 0; i < BUFFER_SIZE-8; i+=2){
             buffer.putChar('\\');
         }
+        buffer.position(putIdx);
+        buffer.putInt(0);
+        buffer.position(putIdx);
+        buffer.putInt(0);
     }
 
     protected void shareInBuffer(int value, int offset){
@@ -142,5 +146,9 @@ public class Channel {
     protected int loadFromBuffer(int offset){
         buffer.position(offset);
         return buffer.getInt();
+    }
+
+    public MappedByteBuffer getBuffer(){
+        return buffer;
     }
 }
