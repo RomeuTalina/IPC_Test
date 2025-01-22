@@ -86,7 +86,11 @@ public class Channel {
         int pos = loadFromBuffer(putIdx);
         int newIdx = pos;
         buffer.position(pos);
-        buffer.putShort(msg.getSize());
+        int msgLength = msg.getSize();
+        String msgLengthString = String.valueOf(msgLength);
+        for(int i = 0; i < msgLengthString.length(); i++){
+            buffer.putChar(msgLengthString.charAt(i));
+        }
         for(int i = 0; i < msg.getSize(); i++){
             buffer.putChar(msg.get(i));
             newIdx = (newIdx + 2) % (BUFFER_SIZE - 8); //Increments the put index in a circular manner.
@@ -96,13 +100,14 @@ public class Channel {
 
     /**
      * Reads a message from the channel.
+     * @param msgLength An int value that will store the length of the obtained message.
      * @return The received character array.
      */
-    public char[] getMsg(){
+    public char[] getMsg(int msgLength){
         int pos = loadFromBuffer(getIdx);
         int newIdx = pos;
         buffer.position(pos);
-        short msgLength = buffer.getShort();
+        MsgLength = readMsgLength("", pos);
         char[] msg = new char[msgLength];
         for(int i = 0; i < msgLength; i++){
             msg[i] = buffer.getChar();
@@ -110,6 +115,16 @@ public class Channel {
         }
         shareInBuffer(newIdx, getIdx);
         return msg;
+    }
+
+    private int readMsgLength(String length, int pos){
+        buffer.position(pos);
+        if(!Character.isDigit(buffer.getChar())){
+            return Integer.parseInt(length);
+        }
+
+        length += buffer.getChar();
+        return readMsgLength(length, pos+1);
     }
 
     protected void initEmpty(){

@@ -13,12 +13,19 @@ public class Message {
         content = contStr.toCharArray();
     }
 
+    public Message(int size){
+        content = new char[size];
+        for(int i = 0; i < size; i++){
+            content[i] = '\\';
+        }
+    }
+
     /**
      * Obtains the length of the character array.
      * @return The length of the character array.
      */
-    public short getSize(){
-        return (short) content.length;
+    public int getSize(){
+        return content.length;
     }
 
     /**
