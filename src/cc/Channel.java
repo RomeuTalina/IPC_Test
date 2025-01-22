@@ -9,11 +9,11 @@ import java.nio.channels.FileLock;
 
 public class Channel {
 
-    private File file;
-    private FileChannel channel;
-    private MappedByteBuffer buffer;
-    private final int BUFFER_SIZE = 568;
-    private final int getIdx = BUFFER_SIZE - 4, putIdx = BUFFER_SIZE - 8;
+    protected File file;
+    protected FileChannel channel;
+    protected MappedByteBuffer buffer;
+    protected final int BUFFER_SIZE = 568;
+    protected final int getIdx = BUFFER_SIZE - 4, putIdx = BUFFER_SIZE - 8;
 
     /**
      * Public constructor for initializing the channel for the first time.
@@ -25,13 +25,10 @@ public class Channel {
     }
 
     /**
-     * Public constructor for when a channel is already in action.
-     * @param filePath: the path to the channel file.
+     * Public constructor for when a channel is already active.
      */
-    public Channel(String filePath){
-        file = new File(filePath);
-        channel = null;
-        buffer = null;
+    public Channel(String filepath) {
+        this.file = new File(filepath);
     }
 
     /**
@@ -115,10 +112,10 @@ public class Channel {
         return msg;
     }
 
-    private void initEmpty(){
+    protected void initEmpty(){
         buffer.position(0);
-        for(int i = 0; i < BUFFER_SIZE; i++){
-            buffer.put((byte)0);
+        for(int i = 0; i < BUFFER_SIZE; i+=2){
+            buffer.putChar('\\');
         }
     }
 
