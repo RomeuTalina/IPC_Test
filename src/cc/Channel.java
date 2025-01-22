@@ -12,8 +12,8 @@ public class Channel {
     private File file;
     private FileChannel channel;
     private MappedByteBuffer buffer;
-    private final int BUFFER_SIZE = 136;
-    private int getIdx = BUFFER_SIZE - 4, putIdx = BUFFER_SIZE - 8;
+    private final int BUFFER_SIZE = 568;
+    private final int getIdx = BUFFER_SIZE - 4, putIdx = BUFFER_SIZE - 8;
 
     /**
      * Public constructor for initializing the channel for the first time.
@@ -37,7 +37,7 @@ public class Channel {
     /**
      * Creates the file, if there isn't one yet; Obtains the channel; Initiates the buffer.
      * Locks the channel to guarantee consistency.
-     * @return
+     * @return Whether the channel opened as intended.
      */
     public boolean openChannel(){
         FileLock lock = null;
@@ -81,24 +81,38 @@ public class Channel {
     }
 
     /**
-     * Sends a message to the channel.
+     * Sends a message to the channel and updates the put index.
+     * The message is preceded by a short indicating its length, for receiving purposes.
      * @param msg is the message whose contents will be put in the channel.
      */
     public void sendMsg(Message msg){
         int pos = loadFromBuffer(putIdx);
+        int newIdx = pos;
         buffer.position(pos);
+        buffer.putShort(msg.getSize());
         for(int i = 0; i < msg.getSize(); i++){
             buffer.putChar(msg.get(i));
+            newIdx = (newIdx + 2) % (BUFFER_SIZE - 8); //Increments the put index in a circular manner.
         }
+        shareInBuffer(newIdx, putIdx);
     }
 
     /**
-     * Reads a message from the channel, putting its contents into an empty message
-     * @param msg is the message whose contents will be transformed
-     * @return whether the operation was successful
+     * Reads a message from the channel.
+     * @return The received character array.
      */
-    public boolean getMsg(Message msg){
-
+    public char[] getMsg(){
+        int pos = loadFromBuffer(getIdx);
+        int newIdx = pos;
+        buffer.position(pos);
+        short msgLength = buffer.getShort();
+        char[] msg = new char[msgLength];
+        for(int i = 0; i < msgLength; i++){
+            msg[i] = buffer.getChar();
+            newIdx = (newIdx + 2) % (BUFFER_SIZE - 8); //Increments the get index in a circular manner.
+        }
+        shareInBuffer(newIdx, getIdx);
+        return msg;
     }
 
     private void initEmpty(){
