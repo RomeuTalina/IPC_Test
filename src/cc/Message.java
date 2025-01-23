@@ -47,4 +47,8 @@ public class Message {
     public void setContent(char[] newContent){
         content = newContent;
     }
+
+    public String toString(){
+        return new String(content);
+    }
 }

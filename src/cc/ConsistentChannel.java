@@ -34,24 +34,20 @@ public class ConsistentChannel extends Channel{
         boolean spaceAvailable = true;
         try{
             lock = channel.lock();
-            int pos = loadFromBuffer(putIdx);
+            int putPos = loadFromBuffer(putIdx);
+            int getPos = loadFromBuffer(getIdx);
+            System.out.println("putIdx: " + putPos);
             int size = msg.getSize();
             String msgLengthString = String.valueOf(size);
-            buffer.position(pos);
-            for(int i = 0; i < msg.getSize()+msgLengthString.length(); i++){
-                if(buffer.getChar() != '\\'){
-                    spaceAvailable = false;
-                    result = false;
-                    break;
-                }
+            buffer.position(putPos);
+            int requiredBytes = (msgLengthString.length() + msg.getSize()) * 2; //Each character takes 2 bytes
+            int availableBytes = putPos < getPos ? getPos-putPos : BUFFER_SIZE - 8 - putPos + getPos;
+            if(availableBytes < requiredBytes){
+                result = false;
+                spaceAvailable = false;
             }
             if(spaceAvailable){
-                for(int i = 0; i < msgLengthString.length(); i++){
-                    buffer.putChar(msgLengthString.charAt(i));
-                }
-                for (int i = 0; i < size; i++){
-                    buffer.putChar(msg.get(i));
-                }
+                sendMsg(msg);
             }
         }catch(IOException e){
             e.printStackTrace();
@@ -77,19 +73,20 @@ public class ConsistentChannel extends Channel{
      */
     public boolean getAndSetConsumer(Message msg){
         FileLock lock = null;
-        boolean result = true;
-        short msgLength = 0;
+        boolean result = false;
         char[] content;
         try{
             lock = channel.lock();
-            int pos = loadFromBuffer(getIdx);
             int length = 0;
+            int pos = loadFromBuffer(getIdx);
+//            System.out.println("getIdx: " + pos);
             buffer.position(pos);
             if(buffer.getChar() != '\\'){
                 buffer.position(pos);
                 content = getMsg(length);
                 msg.setContent(content);
                 sendMsg(new Message(length));
+                result = true;
             }
             else{
                 result = false;

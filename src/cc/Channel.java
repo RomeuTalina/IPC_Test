@@ -41,7 +41,7 @@ public class Channel {
 
         try{
             if(file == null){
-                file = new File("..\\..\\communication.dat");
+                file = new File("communication.dat");
             }
 
             channel = new RandomAccessFile(file, "rw").getChannel();
@@ -69,11 +69,17 @@ public class Channel {
 
     /**
      * Closes the active channel, if there is one.
-     * @throws IOException
+     * @throws IOException If there is no channel.
      */
-    public void closeChannel() throws IOException{
+    public void closeChannel(){
         if(channel != null){
-            channel.close();
+            try{
+                channel.close();
+            }catch(Exception e){
+                e.printStackTrace();
+            }finally{
+                channel = null;
+            }
         }
     }
 
@@ -89,6 +95,7 @@ public class Channel {
         int msgLength = msg.getSize();
         String msgLengthString = String.valueOf(msgLength);
         for(int i = 0; i < msgLengthString.length(); i++){
+            if(buffer.position() == BUFFER_SIZE-8) buffer.position(0);
             buffer.putChar(msgLengthString.charAt(i));
         }
         for(int i = 0; i < msg.getSize(); i++){
@@ -118,13 +125,28 @@ public class Channel {
     }
 
     private int readMsgLength(String length, int pos){
+        StringBuilder lengthBuilder = new StringBuilder();
         buffer.position(pos);
-        if(!Character.isDigit(buffer.getChar())){
-            return Integer.parseInt(length);
+
+        for(int i = 0; i < BUFFER_SIZE-8; i++){
+            if(buffer.position() == BUFFER_SIZE-8) buffer.position(0);
+            char current = buffer.getChar();
+            if(Character.isDigit(current)){
+                lengthBuilder.append(current);
+            }
+            else{
+                break;
+            }
         }
 
-        length += buffer.getChar();
-        return readMsgLength(length, pos+1);
+        if(lengthBuilder.length() == 0){
+            return 0;
+        }
+        else{
+            buffer.position(pos + lengthBuilder.length()*2);
+        }
+
+        return Integer.parseInt(lengthBuilder.toString());
     }
 
     protected void initEmpty(){
@@ -134,7 +156,7 @@ public class Channel {
         }
         buffer.position(putIdx);
         buffer.putInt(0);
-        buffer.position(putIdx);
+        buffer.position(getIdx);
         buffer.putInt(0);
     }
 
@@ -150,5 +172,9 @@ public class Channel {
 
     public MappedByteBuffer getBuffer(){
         return buffer;
+    }
+
+    public String getFilePath(){
+        return file.getAbsolutePath();
     }
 }
