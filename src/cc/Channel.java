@@ -99,6 +99,7 @@ public class Channel {
             buffer.putChar(msgLengthString.charAt(i));
         }
         for(int i = 0; i < msg.getSize(); i++){
+            if(buffer.position() == BUFFER_SIZE-8) buffer.position(0);
             buffer.putChar(msg.get(i));
             newIdx = (newIdx + 2) % (BUFFER_SIZE - 8); //Increments the put index in a circular manner.
         }
@@ -117,6 +118,7 @@ public class Channel {
         msgLength = readMsgLength("", pos);
         char[] msg = new char[msgLength];
         for(int i = 0; i < msgLength; i++){
+            if(buffer.position() == BUFFER_SIZE-8) buffer.position(0);
             msg[i] = buffer.getChar();
             newIdx = (newIdx + 2) % (BUFFER_SIZE - 8); //Increments the get index in a circular manner.
         }
